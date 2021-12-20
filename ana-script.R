@@ -69,3 +69,5 @@ clean_dat %>%
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
   theme_bw()+
   facet_wrap(~Action, scales = "free_y")
+
+fhuftyuiu
