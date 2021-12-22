@@ -110,7 +110,7 @@ mean_mthd2 %>%
   theme_bw()
 
 
-# integration method = more complex
+# integration method = more complex. For now, this is incorrect. We need to do more reading. 
 ssrt_dat = all_dat2 %>%
   filter(VALIDITY == "True") %>%
   group_by(pid, agent, Action) %>%
