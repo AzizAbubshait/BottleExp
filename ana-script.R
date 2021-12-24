@@ -92,9 +92,7 @@ mean_mthd = all_dat2 %>%
   summarize(
     mean_rt = mean(TOUCH_TIME),
     avg_ssd = mean(ssd, na.rm = T)
-  ) 
-
-mean_mthd2 = mean_mthd %>%
+  ) %>%
   mutate(
     avg_ssd2 = avg_ssd[Action=="stop"]
   ) %>%
@@ -103,7 +101,7 @@ mean_mthd2 = mean_mthd %>%
   ) %>%
   filter(Action=="go")
 
-mean_mthd2 %>%
+mean_mthd %>%
   ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
@@ -111,33 +109,63 @@ mean_mthd2 %>%
 
 
 # integration method = more complex. For now, this is incorrect. We need to do more reading. 
+# integration method for avg SSD 
+# ssrt_dat = all_dat2 %>%
+#   filter(VALIDITY == "True") %>%
+#   group_by(
+#     pid, agent, Action
+#   ) %>%
+#   summarize(
+#     mean_err = sum(CORRECT == 0)/length(CORRECT),
+#     n_trial_pre = length(sort(TOUCH_TIME)),
+#     avg_ssd = mean(ssd, na.rm = T)
+#   ) %>%
+#   mutate(
+#     prob_err = mean_err[Action=="stop"],
+#     avg_ssd2 = avg_ssd[Action=="stop"]
+#   ) %>%
+#   mutate(
+#     ssrt_pre = (n_trial_pre*prob_err)) %>%
+#   mutate(
+#     ssrt = ssrt_pre-avg_ssd2
+#   ) %>%
+#   filter(Action == "stop")
+
+# integration method for each SSD. 
 ssrt_dat = all_dat2 %>%
   filter(VALIDITY == "True") %>%
-  group_by(pid, agent, Action) %>%
-  summarize(
-    mean_err = mean(CORRECT),
-    n_trial_pre = length(sort(TOUCH_TIME)),
-    avg_ssd = mean(ssd, na.rm = T)
-  )
-ssrt_dat2 = ssrt_dat %>%
-  mutate(
-    prob_err = mean_err[Action=="stop"],
-    avg_ssd2 = avg_ssd[Action=="stop"]
-    ) %>%
-  mutate(
-    ssrt = avg_ssd-(n_trial_pre*prob_err)
+  group_by(
+    pid, agent, Action, ssd
   ) %>%
+  summarize(
+    prob_err = sum(CORRECT == 0)/length(CORRECT),
+    n_trial_pre = length(sort(TOUCH_TIME[Action=="go"])),
+  ) %>%
+  mutate(n_trial_pre1 = ifelse(n_trial_pre == 0, NA, n_trial_pre)) %>%
+  ungroup(
+    pid, agent, Action, ssd
+  ) %>%
+  fill(n_trial_pre1, .direction = "down") %>%
+  mutate(srt = prob_err*n_trial_pre1) %>%
+  mutate(ssrt = srt-ssd) %>%
   filter(Action == "stop")
 
-ssrt_dat2 %>%
-  filter(ssrt<1000) %>%
+ssrt_dat %>%
   ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
-  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2), width = .1)+
   theme_bw()
 
-ssrt_dat2 %>%
-  filter(ssrt<1000) %>%
+ssrt_dat %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  geom_line(aes(group = pid))+
+  geom_point()+
+  stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2), width = .1)+
+  theme_bw()
+
+ssrt_dat %>%
   ggplot(aes(y = ssrt, x = agent, color = pid))+
-  geom_jitter(width = .1)+
+  geom_jitter(width = .05)+
+  geom_line(aes(group = pid))+
   theme_bw()
