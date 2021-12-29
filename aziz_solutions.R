@@ -114,7 +114,8 @@ mean_mthd %>%
   ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
-  theme_bw()
+  theme_bw()+
+  ggtitle("mean method")
 
 
 # integration method = more complex. For now, this is incorrect. We need to do more reading. 
@@ -175,6 +176,46 @@ ssrt_dat %>%
 
 ssrt_dat %>%
   ggplot(aes(y = ssrt, x = agent, color = pid))+
+  stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
+  theme_bw()
+
+# integration try 2:
+ssrt_dat_a = all_dat2 %>%
+  filter(VALIDITY == "True",
+         Action == "stop") %>%
+  group_by(
+    pid, agent, ssd
+  ) %>%
+  summarize(
+    prob_err = sum(CORRECT == 0)/length(CORRECT),
+    #avg_ssd = mean(ssd)
+  ) 
+
+ssrt_dat_b = all_dat2 %>%
+  filter(VALIDITY == "True",
+         Action == "go") %>%
+  group_by(
+    pid, agent
+  ) %>%
+  summarize(
+    n_trial_pre = length(sort(TOUCH_TIME))
+            ) %>%
+  left_join(ssrt_dat_a, by = c("pid", "agent")) %>%
+  mutate(n_trial_pre1 = ifelse(n_trial_pre == 0, NA, n_trial_pre)) %>%
+  mutate(ssrt = (prob_err*n_trial_pre1)-mean(ssd))
+  
+ssrt_dat_b %>%
+  filter(!pid == "pp_3") %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  geom_jitter(aes(color = pid), width = .2)+
+  stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
+  theme_bw()
+
+ssrt_dat_b %>%
+  filter(!pid == "pp_3") %>%
+  ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
   theme_bw()
