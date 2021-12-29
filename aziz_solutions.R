@@ -14,6 +14,15 @@ filenames = list.files(myPath)
 all_dat = lapply(paste(myPath, filenames, sep = ""), read.csv)
 all_dat = do.call(plyr::rbind.fill, all_dat)
 
+#----
+myPath = paste(getwd(), "/pilot_20_01/", sep = "")
+filenames = list.files(myPath)
+
+all_dat2 = lapply(paste(myPath, filenames, sep = ""), read.csv)
+all_dat2 = do.call(plyr::rbind.fill, all_dat2)
+
+all_dat = rbind(all_dat, all_dat2)
+
 all_dat %>%
   summarize(n= n_distinct(pid))
 
@@ -147,7 +156,7 @@ ssrt_dat = all_dat2 %>%
   ) %>%
   fill(n_trial_pre1, .direction = "down") %>%
   mutate(srt = prob_err*n_trial_pre1) %>%
-  mutate(ssrt = srt-ssd) %>%
+  mutate(ssrt = srt-mean(ssd, na.rm = T)) %>%
   filter(Action == "stop")
 
 ssrt_dat %>%
@@ -158,14 +167,14 @@ ssrt_dat %>%
 
 ssrt_dat %>%
   ggplot(aes(y = ssrt, x = agent))+
-  geom_line(aes(group = pid))+
-  geom_point()+
+  geom_point(alpha = .08)+
+  geom_boxplot(position = position_nudge(.2), width = .1)+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2), width = .1)+
   theme_bw()
 
 ssrt_dat %>%
   ggplot(aes(y = ssrt, x = agent, color = pid))+
-  geom_jitter(width = .05)+
-  geom_line(aes(group = pid))+
+  stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
   theme_bw()
