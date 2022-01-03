@@ -8,7 +8,11 @@ cbbPalette = c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00",
 
 # To do  ----
 # read in data ----
+<<<<<<< HEAD
+myPath = paste(getwd(), "/pilot_20_01/", sep = "")
+=======
 myPath = paste(getwd(), "/p_dat/", sep = "")
+>>>>>>> 94997e16d5fbdc5794ee104882b65809571c93b2
 filenames = list.files(myPath)
 
 all_dat = lapply(paste(myPath, filenames, sep = ""), read.csv)
@@ -22,8 +26,35 @@ str(all_dat)
 summary(all_dat)
 
 # here we look at which trials are valid
+# all_dat %>%
+#   group_by(pid) %>%
+#   summarize(no_touch_onGo = sum(TOUCH_TIME == -1 &
+#                                   #is.na(SOUND_DELAY_MS_LEFT) == F &
+#                                   Action == "go"),
+#             not_sure = sum(RELEASE_TIME == -1), # <---- we don't know what this is. 
+#             early_release = sum(is.na(SOUND_DELAY_MS_LEFT)),
+#             touch_wrong_bottle = sum(BOTTLE_RESPONSE_POSITION != -1 &
+#                                        BOTTLE_RESPONSE_POSITION != ï..Holder)) %>% 
+#   print(n = Inf)
+
 all_dat %>%
   group_by(pid) %>%
+<<<<<<< HEAD
+  summarize(valid_trials = sum(VALIDITY == "True"),
+            invalid_trials = sum(VALIDITY == "False")) %>%
+  print(n = Inf)
+
+clean_dat = all_dat %>%
+  group_by(pid) %>%
+  filter(VALIDITY == "True") %>%
+  mutate(
+    agent = ifelse(ï..Holder == 'right', 'clamp', ifelse(
+      ï..Holder == "left", 'iCub', NA)),
+    corr_new = ifelse(Action == "stop" | TOUCH_TIME > 0, "incor", 
+                      ifelse(Action == "stop" |
+                      TOUCH_TIME == -1, "cor", NA))) %>%
+  group_by(pid, agent) %>%
+=======
   summarize(bad_trials = sum(VALIDITY=="False"),
             good_trials = sum(VALIDITY == "True")) %>% 
   print(n = Inf)
@@ -40,26 +71,30 @@ all_dat2 = all_dat %>%
 # here we look at which trials are correct
 clean_dat = all_dat2 %>%
   group_by(pid, Action, agent) %>%
+>>>>>>> 94997e16d5fbdc5794ee104882b65809571c93b2
   summarize(error_rate = sum(CORRECT == 1)/length(CORRECT),
             rt = mean(RELEASE_TIME),
             touch_rt = mean(TOUCH_TIME))
 
 clean_dat %>%
-  ggplot(aes(y = rt, agent, color = Action))+
+  ggplot(aes(y = rt, agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
   theme_bw()
 
 clean_dat %>%
-  ggplot(aes(y = touch_rt, agent, color = Action))+
+  ggplot(aes(y = touch_rt, agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
   theme_bw()
 
 clean_dat %>%
-  ggplot(aes(y = error_rate, agent))+
+  ggplot(aes(y = error_rate, agent, color = pid))+
+  geom_point()+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
+<<<<<<< HEAD
+=======
   theme_bw()+
   facet_wrap(~Action, scales = "free_y")
 
@@ -92,7 +127,9 @@ mean_mthd = all_dat2 %>%
   summarize(
     mean_rt = mean(TOUCH_TIME),
     avg_ssd = mean(ssd, na.rm = T)
-  ) %>%
+  ) 
+
+mean_mthd2 = mean_mthd %>%
   mutate(
     avg_ssd2 = avg_ssd[Action=="stop"]
   ) %>%
@@ -101,7 +138,7 @@ mean_mthd = all_dat2 %>%
   ) %>%
   filter(Action=="go")
 
-mean_mthd %>%
+mean_mthd2 %>%
   ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
@@ -109,63 +146,34 @@ mean_mthd %>%
 
 
 # integration method = more complex. For now, this is incorrect. We need to do more reading. 
-# integration method for avg SSD 
-# ssrt_dat = all_dat2 %>%
-#   filter(VALIDITY == "True") %>%
-#   group_by(
-#     pid, agent, Action
-#   ) %>%
-#   summarize(
-#     mean_err = sum(CORRECT == 0)/length(CORRECT),
-#     n_trial_pre = length(sort(TOUCH_TIME)),
-#     avg_ssd = mean(ssd, na.rm = T)
-#   ) %>%
-#   mutate(
-#     prob_err = mean_err[Action=="stop"],
-#     avg_ssd2 = avg_ssd[Action=="stop"]
-#   ) %>%
-#   mutate(
-#     ssrt_pre = (n_trial_pre*prob_err)) %>%
-#   mutate(
-#     ssrt = ssrt_pre-avg_ssd2
-#   ) %>%
-#   filter(Action == "stop")
-
-# integration method for each SSD. 
 ssrt_dat = all_dat2 %>%
   filter(VALIDITY == "True") %>%
-  group_by(
-    pid, agent, Action, ssd
-  ) %>%
+  group_by(pid, agent, Action) %>%
   summarize(
-    prob_err = sum(CORRECT == 0)/length(CORRECT),
-    n_trial_pre = length(sort(TOUCH_TIME[Action=="go"])),
+    mean_err = mean(CORRECT),
+    n_trial_pre = length(sort(TOUCH_TIME)),
+    avg_ssd = mean(ssd, na.rm = T)
+  )
+ssrt_dat2 = ssrt_dat %>%
+  mutate(
+    prob_err = mean_err[Action=="stop"],
+    avg_ssd2 = avg_ssd[Action=="stop"]
+    ) %>%
+  mutate(
+    ssrt = avg_ssd-(n_trial_pre*prob_err)
   ) %>%
-  mutate(n_trial_pre1 = ifelse(n_trial_pre == 0, NA, n_trial_pre)) %>%
-  ungroup(
-    pid, agent, Action, ssd
-  ) %>%
-  fill(n_trial_pre1, .direction = "down") %>%
-  mutate(srt = prob_err*n_trial_pre1) %>%
-  mutate(ssrt = srt-ssd) %>%
   filter(Action == "stop")
 
-ssrt_dat %>%
+ssrt_dat2 %>%
+  filter(ssrt<1000) %>%
   ggplot(aes(y = ssrt, x = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
-  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2), width = .1)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2))+
   theme_bw()
 
-ssrt_dat %>%
-  ggplot(aes(y = ssrt, x = agent))+
-  geom_line(aes(group = pid))+
-  geom_point()+
-  stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.2), size = 3)+
-  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.2), width = .1)+
-  theme_bw()
-
-ssrt_dat %>%
+ssrt_dat2 %>%
+  filter(ssrt<1000) %>%
   ggplot(aes(y = ssrt, x = agent, color = pid))+
-  geom_jitter(width = .05)+
-  geom_line(aes(group = pid))+
+  geom_jitter(width = .1)+
+>>>>>>> 94997e16d5fbdc5794ee104882b65809571c93b2
   theme_bw()
