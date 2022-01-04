@@ -156,5 +156,14 @@ ssrt_dat_b %>%
   stat_summary(fun.data = mean_se, geom = "point", size = 5)+
   theme_bw()
 
+ssrt_dat_b %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  geom_point(alpha = .2)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05, 
+               position = position_dodge(.5), color = "black")+
+  stat_summary(fun.data = mean_se, geom = "point", size = 5)+
+  theme_bw()+
+  geom_line(aes(group = pid))
+
 range(ssrt_dat_b$ssrt)
 mean(ssrt_dat_b$ssrt)
