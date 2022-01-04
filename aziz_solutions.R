@@ -3,7 +3,7 @@ library(lme4)
 library(lmerTest)
 library(afex)
 library(PupillometryR)
-library()
+
 # colors for the graph ----
 cbbPalette = c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
@@ -156,5 +156,91 @@ ssrt_dat_b %>%
   stat_summary(fun.data = mean_se, geom = "point", size = 5)+
   theme_bw()
 
+ssrt_dat_b %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  geom_point(alpha = .2)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05, 
+               position = position_dodge(.5), color = "black")+
+  stat_summary(fun.data = mean_se, geom = "point", size = 5)+
+  theme_bw()+
+  geom_line(aes(group = pid))
+
 range(ssrt_dat_b$ssrt)
 mean(ssrt_dat_b$ssrt)
+
+# lets do the same but calculate a single p(respond|signal) for both agents
+ssrt_dat_a2 = all_dat %>%
+  mutate(
+    agent = ifelse(ï..Holder == 'right', 'clamp', ifelse(
+      ï..Holder == "left", 'iCub', NA)),
+    ssd_new = ifelse(agent == "iCub", SOUND_DELAY_MS_LEFT,
+                     ifelse(agent == "clamp", SOUND_DELAY_MS_RIGHT, NA))
+  ) %>%
+  filter(
+    VALIDITY == "True",
+    Action == "stop"
+  ) %>%
+  group_by(
+    pid
+  ) %>%
+  summarize(
+    prob_err = sum(CORRECT == 0)/length(CORRECT),
+  )
+
+ssrt_dat_b2 = all_dat %>%
+  mutate(
+    agent = ifelse(ï..Holder == 'right', 'clamp', ifelse(
+      ï..Holder == "left", 'iCub', NA)),
+    ssd_new = ifelse(agent == "iCub", SOUND_DELAY_MS_LEFT,
+                     ifelse(agent == "clamp", SOUND_DELAY_MS_RIGHT, NA))
+  ) %>%
+  filter(
+    VALIDITY == "True",
+    Action == "stop"
+  ) %>%
+  group_by(
+    pid, agent
+  ) %>%
+  summarize(
+    avg_ssd = mean(ssd_new)
+  ) %>%
+  left_join(
+    ssrt_dat_a2
+  )
+
+ssrt_dat_c2 = all_dat2 %>%
+  filter(VALIDITY == "True",
+         Action == "go") %>%
+  group_by(
+    pid, agent
+  ) %>%
+  select(pid, agent, TOUCH_TIME) %>%
+  left_join(
+    ssrt_dat_b2, by = c("pid", "agent")
+  ) %>%
+  #nest() %>%
+  summarize(
+    nth_trial = mean(quantile(TOUCH_TIME, 
+                              probs = prob_err, type = 6)),
+    avg_ssd = mean(avg_ssd)
+  ) %>%
+  mutate(ssrt = nth_trial-avg_ssd)
+
+ssrt_dat_c2 %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  geom_point(position = sdamr::position_jitternudge(jitter.width = .1, nudge.x = .2), 
+             alpha = .4)+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05, 
+               position = position_dodge(.5), color = "black")+
+  stat_summary(fun.data = mean_se, geom = "point", size = 5)+
+  theme_bw()
+
+ssrt_dat_c2 %>%
+  ggplot(aes(y = ssrt, x = agent))+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = .05, 
+               position = position_dodge(.5), color = "black")+
+  stat_summary(fun.data = mean_se, geom = "point", size = 5)+
+  theme_bw()
+
+t.test(ssrt_dat_c2$ssrt[ssrt_dat_c2$agent == "iCub"],
+       ssrt_dat_c2$ssrt[ssrt_dat_c2$agent == "clamp"], paired = T)
