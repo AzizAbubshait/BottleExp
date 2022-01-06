@@ -31,18 +31,16 @@ all_dat %>%
   print(n = Inf)
 
 # here we make some new variables of interest
+# mean method = mean rt - SSD ----
+
 all_dat2 = all_dat %>%
   mutate(
     agent = ifelse(ï..Holder == 'right', 'clamp', ifelse(
       ï..Holder == "left", 'iCub', NA)),
     ssd = ifelse(SOUND_DELAY_MS_LEFT == -1, NA,
-                 SOUND_DELAY_MS_LEFT)) %>%
-  mutate(avg_ssd = mean(ssd, na.rm = T))
+                 SOUND_DELAY_MS_LEFT))
 
 
-# SSRT
-
-# mean method = mean rt - SSD ----
 mean_mthd = all_dat2 %>%
   filter(VALIDITY == "True") %>%
   group_by(pid, agent, Action) %>%
@@ -67,7 +65,7 @@ mean_mthd %>%
 
 
 # integration method = more complex  ----
-# integration method for avg SSD 
+# integration method for avg SSD . This is so far the best method
 
 # integration method
 
@@ -108,30 +106,32 @@ ssrt_dat_b = all_dat2 %>%
     ) %>%
   mutate(ssrt = nth_trial-avg_ssd)
   
-ssrt_dat$pid[which(ssrt_dat_b$ssrt>600)]
+ssrt_dat_b$pid[which(ssrt_dat_b$ssrt>600)]
 
 ssrt_dat_b %>%
-  #filter(!pid %in% c("2")) %>%
+  filter(!pid %in% bad_pees) %>%
   ggplot(aes(y = ssrt, x = agent))+
   geom_jitter(aes(color = pid), width = .2)+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
   theme_bw()
 
+bad_pees = c("3", "pp_7", "pp_16")
 ssrt_dat_b %>%
-  #filter(!pid == "2") %>%
-  ggplot(aes(y = ssrt, x = agent))+
+  filter(!pid %in% bad_pees) %>%
+  ggplot(aes(y = ssrt, x = agent, color = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
   theme_bw()
 
-t.test(ssrt_dat_b$ssrt[ssrt_dat_b$agent == "iCub"],
-       ssrt_dat_b$ssrt[ssrt_dat_b$agent == "clamp"], paired = T)
+ssrt_dat_ana = ssrt_dat_b %>% filter(!pid %in% bad_pees)
+t.test(ssrt_dat_ana$ssrt[ssrt_dat_ana$agent == "iCub"],
+       ssrt_dat_ana$ssrt[ssrt_dat_ana$agent == "clamp"], paired = T)
 
 ssrt_dat_b %>%
-  #filter(!pid == "2") %>%
-  ggplot(aes(y = ssrt, x = agent))+
-  geom_flat_violin(position = position_nudge(.2), alpha = .4, lwd = .5, color = "black")+theme_bw()+
+  filter(!pid %in% bad_pees) %>%
+  ggplot(aes(y = ssrt, x = agent, color = agent, fill = agent))+
+  geom_flat_violin(position = position_nudge(.12), alpha = .4, lwd = .5, color = "black")+theme_bw()+
   geom_point(position = position_jitter(width = .1), alpha = .4)+
   stat_summary(fun.data = mean_se, geom = "errorbar", width = .1, 
                position = position_dodge(.5), color = "black")+
