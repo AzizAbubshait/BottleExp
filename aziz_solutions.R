@@ -108,17 +108,18 @@ ssrt_dat_b = all_dat2 %>%
   
 ssrt_dat_b$pid[which(ssrt_dat_b$ssrt>600)]
 
+bad_pees = c("3", "pp_7", "pp_16")
+
 ssrt_dat_b %>%
-  filter(!pid %in% bad_pees) %>%
+#  filter(!pid %in% bad_pees) %>%
   ggplot(aes(y = ssrt, x = agent))+
   geom_jitter(aes(color = pid), width = .2)+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
   theme_bw()
 
-bad_pees = c("3", "pp_7", "pp_16")
 ssrt_dat_b %>%
-  filter(!pid %in% bad_pees) %>%
+#  filter(!pid %in% bad_pees) %>%
   ggplot(aes(y = ssrt, x = agent, color = agent))+
   stat_summary(fun.data = mean_se, geom = "point", position = position_dodge(.5), size = 3)+
   stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(.5), width = .1)+
@@ -163,7 +164,7 @@ ssrt_dat_b %>%
                position = position_dodge(.5), color = "black")+
   stat_summary(fun.data = mean_se, geom = "point", size = 5)+
   theme_bw()+
-  geom_line(aes(group = pid))
+  geom_line(aes(group = pid), linetype = "dashed", alpha = .5)
 
 range(ssrt_dat_b$ssrt)
 mean(ssrt_dat_b$ssrt)
